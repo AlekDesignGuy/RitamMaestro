@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Drumkit with Metronome</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        h1 {
+            margin-bottom: 0px;
+            color: #ffffff;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(187, 134, 252, 0.3);
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            background-color: #1e1e1e;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .container2 {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+
+        }
+
+        .text-div{
+            flex: 1;
+        }
+    
+        .equalizer-display {
+            flex: 1;
+            height: 120px;
+            background-color: #000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+            border: 2px solid #333;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #equalizer-canvas {
+            width: 100%;
+            height: 100%;
+            margin-bottom: 20px;
+            background-color: #000;
+        }
+        
+        .row {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .pad {
+            width: 240px;
+            height: 240px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 48px;
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: white;
+            box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .pad:active, .pad.playing {
+            transform: scale(0.99) translateY(0px);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 255, 255, 0.1);
+            filter: brightness(1.2);
+        }
+        
+        .pad-q { background-color: #cf6679; }
+        .pad-w { background-color: #ff7043; }
+        .pad-e { background-color: #ffb300; color: #333; }
+        .pad-r { background-color: #66bb6a; }
+        .pad-a { background-color: #29b6f6; }
+        .pad-s { background-color: #5c6bc0; }
+        .pad-d { background-color: #ba68c8; }
+        .pad-f { background-color: #ec407a; }
+        
+        .sound-name {
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: center;
+            color: #a0a0a0;
+            font-size: 18px;
+            background-color: #1e1e1e;
+            padding: 15px 25px;
+            border-radius: 10px;
+        }
+
+        #status {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #2e2e2e;
+            color: #e0e0e0;
+            font-size: 16px;
+            min-height: 0px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        /* Metronome Controls */
+        .metronome-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            background-color: #2e2e2e;
+            padding: 15px 0;
+            border-radius: 10px;
+            width: 100%;
+        }
+        
+        .metronome-button {
+            background-color: #444;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .metronome-button:hover {
+            background-color: #555;
+        }
+        
+        .metronome-button:active {
+            transform: scale(0.95);
+        }
+        
+        .metronome-button.active {
+            background-color: #cf6679;
+        }
+        
+        .bpm-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .bpm-slider {
+            width: 200px;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #444;
+            outline: none;
+        }
+        
+        .bpm-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #bb86fc;
+            cursor: pointer;
+        }
+        
+        .bpm-display {
+            background-color: #000;
+            padding: 8px 15px;
+            border-radius: 5px;
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .beat-indicator {
+            display: flex;
+            gap: 10px;
+            margin-top: 0px;
+        }
+        
+        .beat {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #444;
+            transition: background-color 0.1s;
+        }
+        
+        .beat.active {
+            background-color: #ffffff;
+        }
+        
+        .beat.first {
+            background-color: #444;
+        }
+        
+        .beat.first.active {
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+   
+    <div class="container">
+        <div class="container2">
+            <div class="text-div">
+                <h1>RitamMaestro 2000</h1>
+            </div>
+            <div class="equalizer-display">
+                <canvas id="equalizer-canvas"></canvas>
+            </div>
+        </div>
+        <div class="row">
+            <div class="pad pad-q" data-key="KeyQ" data-sound="kick" id="pad-q">
+                <div>Q</div>
+                <div class="sound-name">Kick</div>
+            </div>
+            <div class="pad pad-w" data-key="KeyW" data-sound="snare">
+                <div>W</div>
+                <div class="sound-name">Snare</div>
+            </div>
+            <div class="pad pad-e" data-key="KeyE" data-sound="hihat">
+                <div>E</div>
+                <div class="sound-name">Hi-Hat</div>
+            </div>
+            <div class="pad pad-r" data-key="KeyR" data-sound="openhat">
+                <div>R</div>
+                <div class="sound-name">Open Hat</div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="pad pad-a" data-key="KeyA" data-sound="tom">
+                <div>A</div>
+                <div class="sound-name">Tom</div>
+            </div>
+            <div class="pad pad-s" data-key="KeyS" data-sound="clap">
+                <div>S</div>
+                <div class="sound-name">Clap</div>
+            </div>
+            <div class="pad pad-d" data-key="KeyD" data-sound="ride">
+                <div>D</div>
+                <div class="sound-name">Ride</div>
+            </div>
+            <div class="pad pad-f" data-key="KeyF" data-sound="crash">
+                <div>F</div>
+                <div class="sound-name">Crash</div>
+            </div>
+    
+        </div>
+        <!-- Metronome Controls -->
+        <div class="metronome-controls">
+            <button id="metronome-toggle" class="metronome-button">Start</button>
+            
+            <div class="bpm-control">
+                <span>BPM:</span>
+                <input type="range" min="40" max="220" value="90" class="bpm-slider" id="bpm-slider">
+                <div class="bpm-display" id="bpm-display">90</div>
+            </div>
+            
+            <div class="beat-indicator">
+                <div class="beat first" id="beat-1"></div>
+                <div class="beat" id="beat-2"></div>
+                <div class="beat" id="beat-3"></div>
+                <div class="beat" id="beat-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="status">Status: Ready</div>
+
+    <!-- Drum Sounds -->
+    <audio data-sound="kick" src="sounds/kick.wav" preload="auto"></audio>
+    <audio data-sound="snare" src="sounds/snare.wav" preload="auto"></audio>
+    <audio data-sound="hihat" src="sounds/hihat.wav" preload="auto"></audio>
+    <audio data-sound="openhat" src="sounds/openhat.wav" preload="auto"></audio>
+    <audio data-sound="tom" src="sounds/tom.wav" preload="auto"></audio>
+    <audio data-sound="clap" src="sounds/clap.wav" preload="auto"></audio>
+    <audio data-sound="ride" src="sounds/ride.wav" preload="auto"></audio>
+    <audio data-sound="crash" src="sounds/crash.wav" preload="auto"></audio>
+    
+    <!-- Metronome Sounds -->
+    <audio id="metronome-click-high" src="sounds/metronome-high.wav" preload="auto"></audio>
+    <audio id="metronome-click-low" src="sounds/metronome-low.wav" preload="auto"></audio>
+
+    <script>
+        // Select all pads and audio elements
+        const pads = document.querySelectorAll('.pad');
+        const statusEl = document.getElementById('status');
+        const canvas = document.getElementById('equalizer-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Metronome elements
+        const metronomeToggle = document.getElementById('metronome-toggle');
+        const bpmSlider = document.getElementById('bpm-slider');
+        const bpmDisplay = document.getElementById('bpm-display');
+        const beatIndicators = [
+            document.getElementById('beat-1'),
+            document.getElementById('beat-2'),
+            document.getElementById('beat-3'),
+            document.getElementById('beat-4')
+        ];
+        
+        // Metronome sounds
+        const clickHigh = document.getElementById('metronome-click-high');
+        const clickLow = document.getElementById('metronome-click-low');
+        
+        // Create audio context for metronome
+        let audioContext;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.error('Web Audio API is not supported in this browser');
+        }
+        
+        // Metronome variables
+        let isPlaying = false;
+        let bpm = 90;
+        let currentBeat = 0;
+        let metronomeInterval;
+        
+        // Set canvas dimensions to match display size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Equalizer variables
+        let equalizerBars = [];
+        const numBars = 30;
+        const barWidth = canvas.width / numBars;
+        const maxBarHeight = canvas.height * 0.9;
+        
+        // Initialize equalizer bars
+        for (let i = 0; i < numBars; i++) {
+            equalizerBars.push(0);
+        }
+        
+        // Function to draw the equalizer
+        function drawEqualizer() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Center line
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(50, 205, 50, 0.2)'; // Dim green
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+            
+            // Draw bars
+            ctx.fillStyle = '#32CD32'; // Lime green
+            
+            for (let i = 0; i < numBars; i++) {
+                const x = i * barWidth;
+                let barHeight = Math.max(2, equalizerBars[i]);
+                
+                // Draw bar from center line
+                ctx.fillRect(
+                    x, 
+                    (canvas.height - barHeight) / 2, 
+                    barWidth - 2, 
+                    barHeight
+                );
+                
+                // Decrease bar height gradually
+                equalizerBars[i] *= 0.9;
+            }
+            
+            requestAnimationFrame(drawEqualizer);
+        }
+        
+        // Start animation loop
+        drawEqualizer();
+        
+        // Function to trigger equalizer animation
+        function triggerEqualizer(intensity) {
+            // Generate random heights for some bars
+            for (let i = 0; i < numBars; i++) {
+                if (Math.random() > 0.5) {
+                    equalizerBars[i] = Math.random() * maxBarHeight * intensity;
+                }
+            }
+        }
+        
+        // Function to play sound and trigger equalizer
+        function playSound(soundName) {
+            const audio = document.querySelector(`audio[data-sound="${soundName}"]`);
+            if (!audio) {
+                updateStatus(`Error: Could not find audio element for ${soundName}`);
+                return;
+            }
+            
+            try {
+                audio.currentTime = 0;
+                let playPromise = audio.play();
+                
+                // Trigger equalizer with varying intensity based on sound
+                let intensity = 0.6;
+                switch(soundName) {
+                    case 'kick':
+                        intensity = 1.0;
+                        break;
+                    case 'snare':
+                        intensity = 0.8;
+                        break;
+                    case 'hihat':
+                        intensity = 0.5;
+                        break;
+                    case 'openhat':
+                        intensity = 0.7;
+                        break;
+                    case 'tom':
+                        intensity = 0.9;
+                        break;
+                    case 'clap':
+                        intensity = 0.8;
+                        break;
+                    case 'ride':
+                        intensity = 0.6;
+                        break;
+                    case 'crash':
+                        intensity = 0.9;
+                        break;
+                }
+                
+                triggerEqualizer(intensity);
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        // Playback started successfully
+                    })
+                    .catch(error => {
+                        // Auto-play was prevented or there was an error
+                        updateStatus(`Error playing ${soundName}: ${error.message}`);
+                    });
+                }
+            } catch (e) {
+                updateStatus(`Exception playing ${soundName}: ${e.message}`);
+            }
+        }
+        
+        // Function to create metronome sound with Web Audio API
+        function createMetronomeSound(frequency, duration) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequency;
+            
+            gainNode.gain.value = 0.1;
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.001, audioContext.currentTime + duration
+            );
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // Function to play metronome click
+        function playMetronomeClick(isAccented) {
+            try {
+                if (isAccented) {
+                    // First beat - high click
+                    if (clickHigh) {
+                        clickHigh.currentTime = 0;
+                        clickHigh.play();
+                    } else {
+                        createMetronomeSound(1200, 0.05);
+                    }
+                    
+                    triggerEqualizer(0.7); // Higher intensity for first beat
+                } else {
+                    // Other beats - low click
+                    if (clickLow) {
+                        clickLow.currentTime = 0;
+                        clickLow.play();
+                    } else {
+                        createMetronomeSound(800, 0.05);
+                    }
+                    
+                    triggerEqualizer(0.4); // Lower intensity for other beats
+                }
+            } catch (e) {
+                console.error('Error playing metronome sound:', e);
+            }
+        }
+        
+        // Update metronome beat indicators
+        function updateBeatIndicators() {
+            beatIndicators.forEach((indicator, index) => {
+                indicator.classList.remove('active');
+                if (index === currentBeat) {
+                    indicator.classList.add('active');
+                }
+            });
+        }
+        
+        // Function to run the metronome
+        function runMetronome() {
+            // Calculate interval in milliseconds from BPM
+            const interval = 60000 / bpm;
+            
+            // Clear any existing interval
+            clearInterval(metronomeInterval);
+            
+            // Reset beat counter
+            currentBeat = 0;
+            
+            // Start new interval
+            metronomeInterval = setInterval(() => {
+                // Play the appropriate click sound (high for first beat, low for others)
+                const isFirstBeat = currentBeat === 0;
+                playMetronomeClick(isFirstBeat);
+                
+                // Update visual indicators
+                updateBeatIndicators();
+                
+                // Move to next beat
+                currentBeat = (currentBeat + 1) % 4;
+            }, interval);
+        }
+        
+        // Toggle metronome function
+        function toggleMetronome() {
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                // Resume audio context if suspended
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                runMetronome();
+                metronomeToggle.textContent = 'Stop';
+                metronomeToggle.classList.add('active');
+                updateStatus(`Metronome started at ${bpm} BPM`);
+            } else {
+                clearInterval(metronomeInterval);
+                metronomeToggle.textContent = 'Start';
+                metronomeToggle.classList.remove('active');
+                
+                // Reset beat indicators
+                beatIndicators.forEach(indicator => {
+                    indicator.classList.remove('active');
+                });
+                
+                updateStatus('Metronome stopped');
+            }
+        }
+        
+        // Update BPM display and restart metronome if playing
+        function updateBPM() {
+            bpm = parseInt(bpmSlider.value);
+            bpmDisplay.textContent = bpm;
+            
+            if (isPlaying) {
+                runMetronome();
+            }
+            
+            updateStatus(`BPM set to ${bpm}`);
+        }
+        
+        // Add event listeners for metronome controls
+        metronomeToggle.addEventListener('click', toggleMetronome);
+        bpmSlider.addEventListener('input', updateBPM);
+        
+        // Debug function
+        function updateStatus(message) {
+            statusEl.textContent = "Status: " + message;
+            console.log(message);
+        }
+        
+        // Function to add visual feedback
+        function addVisualFeedback(element) {
+            element.classList.add('playing');
+            setTimeout(() => {
+                element.classList.remove('playing');
+            }, 150);
+        }
+        
+        // Try an alternative approach for Q key
+        document.addEventListener('keypress', (event) => {
+            if (event.key.toLowerCase() === 'q') {
+                const pad = document.getElementById('pad-q');
+                const soundName = pad.getAttribute('data-sound');
+                playSound(soundName);
+                addVisualFeedback(pad);
+            }
+        });
+        
+        // Handle keyboard events (standard method)
+        document.addEventListener('keydown', (event) => {
+            const pad = document.querySelector(`[data-key="${event.code}"]`);
+            if (!pad) return;
+            
+            const soundName = pad.getAttribute('data-sound');
+            playSound(soundName);
+            addVisualFeedback(pad);
+        });
+        
+        // Handle clicks on pads
+        pads.forEach(pad => {
+            pad.addEventListener('click', () => {
+                const soundName = pad.getAttribute('data-sound');
+                playSound(soundName);
+                addVisualFeedback(pad);
+            });
+        });
+        
+        // Check if audio files are loaded
+        window.addEventListener('load', () => {
+            const audioElements = document.querySelectorAll('audio');
+            let loadedCount = 0;
+            const totalCount = audioElements.length;
+            
+            audioElements.forEach(audio => {
+                const sound = audio.getAttribute('data-sound') || audio.id;
+                
+                if (audio.readyState >= 2) {
+                    loadedCount++;
+                    console.log(`${sound} loaded successfully`);
+                } else {
+                    audio.addEventListener('canplaythrough', () => {
+                        loadedCount++;
+                        if (loadedCount === totalCount) {
+                            updateStatus("All sounds loaded and ready to play");
+                        }
+                    }, { once: true });
+                    
+                    audio.addEventListener('error', () => {
+                        updateStatus(`Error loading ${sound} sound file`);
+                    });
+                }
+            });
+            
+            if (loadedCount === totalCount) {
+                updateStatus("All sounds loaded and ready to play");
+            }
+            
+            // Create metronome sounds if they don't exist
+            if (!clickHigh.src || !clickLow.src) {
+                updateStatus("Metronome sounds not found. Using synthesized sounds instead.");
+            }
+        });
+    </script>
+</body>
+</html>
